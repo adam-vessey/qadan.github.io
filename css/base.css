@@ -1,1 +1,3 @@
-html, body, #map-canvas { height: 100%; margin: 0; padding: 0;}
+.container { height: 90vh; }
+#map-canvas { height: 100%; width: 95%; margin-left: auto; margin-right: auto; padding: 0; }
+h1 { margin-left: auto; margin-right: auto; text-align: center; } 
