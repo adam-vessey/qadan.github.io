@@ -80,7 +80,7 @@ function setMarkers(destinationMap, locations) {
 
 function initialize() {
   var mapOptions = {
-    center: { lat: 46.5289555, lng: -63.4319119 },
+    center: { lat: 46.5151303, lng: -63.2609883 },
     zoom: 9
   };
   var map = new google.maps.Map(document.getElementById('map-canvas'), mapOptions);
