@@ -10,6 +10,7 @@ def grab_from_generator(generator, place):
 def extract_coords_from_url(url):
     '''
     TODO: this
+    Should return a dictionary containing 'latitude' and 'longitude'.
     '''
 
 def save_burger_image(url):
@@ -17,11 +18,23 @@ def save_burger_image(url):
     TODO: yeah this one too
     if dir 'images' doesn't exist, mkdir 'images'
     curl url to images mmm hmm
+    return path to image
     '''
 
 def use_witchcraft_to_messily_divine_an_ingredient_list(ingredient_string):
     '''
     TODO: oh god
+    Should return a list of ingredients.
+    '''
+
+def determine_hours_of_operation(hours_string):
+    '''
+    TODO: should return a dictionary of "Monday" to "Friday".
+    '''
+
+def parse_address(address_string):
+    '''
+    TODO: should return a dictionary with 'Street Address', 'City', etc.
     '''
 
 urls = [
@@ -90,15 +103,24 @@ urls = [
 completed_list = []
 for url in urls:
     list_item = {}
+    urls = {}
     page = urllib2.urlopen(url).read()
     parsed_page = BeautifulSoup(page)
-    list_item['url'] = url
+    urls['burger_page'] = url
+    urls['vote_page'] = 'ADD VOTE PAGE'
+    urls['company_website'] = 'ADD COMPANY WEBSITE'
+    list_item['urls'] = urls
     list_item['burger_name'] = grab_from_generator(parsed_page.find(id="Burger-Title").stripped_strings, 0)
     list_item['restaurant_name'] = parsed_page.find(id="Restaurant-Name").string
     list_item['burger_quote'] = grab_from_generator(parsed_page.find(id="Burger-Quote").stripped_strings, 1)
+    list_item['coordinates'] = extract_coords_from_url('STRING OF GOOGLE MAPS URL ON PAGE')
+    list_item['image_path'] = save_burger_image('STRING OF BURGER IMAGE URL')
+    list_item['ingredients'] = use_witchcraft_to_messily_divine_an_ingredient_list('STRING OF INGREDIENT LIST')
+    list_item['address'] = parse_address('STRING OF ADDRESS')
+    list_item['phone_number'] = 'ADD PHONE NUMBER'
+    list_item['hours_of_operation'] = determine_hours_of_operation('STRING OF HOURS OF OPERATION')
     '''
-    TODO: the rest of the list items that you scribbled on your sheet of paper as one would scribble 'proof' about how the moon landings were faked
-    there were arrows and everything
+    TODO: complete the logic and determine if any of these values should be null.
     '''
     completed_list.append(list_item)
 
