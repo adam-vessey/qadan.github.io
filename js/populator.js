@@ -63,6 +63,8 @@ var locations = [
 
 var infoWindows = [];
 
+var markers = [];
+
 function setMarkers(destinationMap, locations) {
   locations.forEach(function(restaurant) {
     var coords = new google.maps.LatLng(restaurant[2], restaurant[3]);
@@ -71,6 +73,7 @@ function setMarkers(destinationMap, locations) {
       map: destinationMap,
       title: restaurant[1]
     });
+    markers.push(marker);
     var infoWindow = new google.maps.InfoWindow({
       content: "<a href='" + restaurant[0] + "'>" + restaurant[1] + "</a>"
     });
@@ -85,6 +88,7 @@ function initialize() {
   };
   var map = new google.maps.Map(document.getElementById('map-canvas'), mapOptions);
   setMarkers(map, locations);
+  new MarkerClusterer(map, markers);
   infoWindows.forEach(function(infoWindow) {
     google.maps.event.addListener(infoWindow[1], 'click', function() { closeInfoWindows(); infoWindow[0].open(map, infoWindow[1]) });
   });
