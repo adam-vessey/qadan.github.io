@@ -66,12 +66,13 @@ var infoWindows = [];
 var markers = [];
 
 function setMarkers(destinationMap, locations) {
-  locations.forEach(function(restaurant) {
+  locations.forEach(function(restaurant, idx) {
     var coords = new google.maps.LatLng(restaurant[2], restaurant[3]);
     var marker = new google.maps.Marker({
       position: coords,
       map: destinationMap,
-      title: restaurant[1]
+      title: restaurant[1],
+      index: idx
     });
     markers.push(marker);
     var infoWindow = new google.maps.InfoWindow({
@@ -88,9 +89,17 @@ function initialize() {
   };
   var map = new google.maps.Map(document.getElementById('map-canvas'), mapOptions);
   setMarkers(map, locations);
-  new MarkerClusterer(map, markers);
-  infoWindows.forEach(function(infoWindow) {
-    google.maps.event.addListener(infoWindow[1], 'click', function() { closeInfoWindows(); infoWindow[0].open(map, infoWindow[1]) });
+  new MarkerClusterer(map, markers, {
+    maxZoom: 18
+  });
+  var oms = new OverlappingMarkerSpiderfier(map);
+  oms.addListener('click', function (marker, event) {
+    closeInfoWindows();
+    var iw = infoWindows[marker.index][0];
+    iw.open(map, marker);
+  });
+  markers.forEach(function (marker) {
+    oms.addMarker(marker);
   });
 }
 
