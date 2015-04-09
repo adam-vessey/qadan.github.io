@@ -1,6 +1,14 @@
 import urllib2
 import json
 from bs4 import BeautifulSoup
+import os
+import urlparse
+
+burger_path = os.path.realpath(os.curdir) + '/burger_images'
+if not os.path.exists(burger_path):
+    os.makedirs(burger_path)
+
+base_url = "http://peiburgerlove.ca/"
 
 def grab_from_generator(generator, place):
     for n in range(0, place):
@@ -8,34 +16,55 @@ def grab_from_generator(generator, place):
     return generator.next()
 
 def extract_coords_from_url(url):
-    '''
-    TODO: this
-    Should return a dictionary containing 'latitude' and 'longitude'.
-    '''
+    parsed_url = urlparse.urlparse(url)
+    if parsed_url.query:
+        parsed_qs = urlparse.parse_qs(parsed_url.query)
+        coords = parsed_qs['sll'][0].split(',')
+    else:
+        url_parts = parsed_url.path.split('/')
+        coords = url_parts[4]
+        coords = coords[1:-1].split(',')
+    return { 'latitude': coords[0], 'longitude': coords[1] }
 
 def save_burger_image(url):
-    '''
-    TODO: yeah this one too
-    if dir 'images' doesn't exist, mkdir 'images'
-    curl url to images mmm hmm
-    return path to image
-    '''
+    image = urllib2.urlopen(url)
+    parsed_url = urlparse.urlparse(url)
+    url_parts = parsed_url.path.split('/')
+    image_name = url_parts[2] + ".png"
+    local_path = 'burger_images/' + image_name
+    local_image = open(local_path, 'w')
+    local_image.write(image.read())
+    local_image.close()
+    return local_path
 
 def use_witchcraft_to_messily_divine_an_ingredient_list(ingredient_string):
-    '''
-    TODO: oh god
-    Should return a list of ingredients.
-    '''
+    if ' on a ' in ingredient_string:
+        separated_ingredients = ingredient_string.split(' on a ')
+        messy_ingredient_list = separated_ingredients[0].split(', ')
+        not_messy_ingredient_list = []
+        for ingredient in messy_ingredient_list:
+            if ingredient.startswith("and "):
+                not_messy_ingredient_list.append(ingredient[4:])
+            elif " and " in ingredient:
+                not_messy_ingredient_list.extend(ingredient.split(" and "))
+            else:
+                not_messy_ingredient_list.append(ingredient)
+        return { 'ingredients': not_messy_ingredient_list, 'bun': separated_ingredients[1] }
+    elif ' nestled between ' in ingredient_string:
+        '''
+        This takes care of an edge case with the Frosty Treat entry (damn you and your weird ice cream sandwich burger!)
+        '''
+        return { 'ingredients': ['5oz. Island Beef Patty', 'Bacon', 'Maple Syrup', 'Marshmallow', 'Maraschino Cherry'], 'bun': 'two Ice Cream Sandwiches' }
 
-def determine_hours_of_operation(hours_string):
+def split_string_on_one_of_several_strings(string, split_types):
     '''
-    TODO: should return a dictionary of "Monday" to "Friday".
+    Because OS-X vs. Windows weirdness
     '''
-
-def parse_address(address_string):
-    '''
-    TODO: should return a dictionary with 'Street Address', 'City', etc.
-    '''
+    for split_type in split_types:
+        if split_type in string:
+            new_list = map(unicode.strip, string.split(split_type))
+            return new_list
+    return [string]
 
 urls = [
     'http://peiburgerlove.ca/burger/21-Breakwater-Restaurant',
@@ -107,22 +136,35 @@ for url in urls:
     page = urllib2.urlopen(url).read()
     parsed_page = BeautifulSoup(page)
     urls['burger_page'] = url
-    urls['vote_page'] = 'ADD VOTE PAGE'
-    urls['company_website'] = 'ADD COMPANY WEBSITE'
+    urls['vote_page'] = base_url + parsed_page.find(id="Rate-Button")['href']
+    company_website = parsed_page.find(class_="website-link")
+    if company_website:
+        urls['company_website'] = company_website['href']
+    else:
+        urls['company_website'] = False
     list_item['urls'] = urls
     list_item['burger_name'] = grab_from_generator(parsed_page.find(id="Burger-Title").stripped_strings, 0)
     list_item['restaurant_name'] = parsed_page.find(id="Restaurant-Name").string
     list_item['burger_quote'] = grab_from_generator(parsed_page.find(id="Burger-Quote").stripped_strings, 1)
-    list_item['coordinates'] = extract_coords_from_url('STRING OF GOOGLE MAPS URL ON PAGE')
-    list_item['image_path'] = save_burger_image('STRING OF BURGER IMAGE URL')
-    list_item['ingredients'] = use_witchcraft_to_messily_divine_an_ingredient_list('STRING OF INGREDIENT LIST')
-    list_item['address'] = parse_address('STRING OF ADDRESS')
-    list_item['phone_number'] = 'ADD PHONE NUMBER'
-    list_item['hours_of_operation'] = determine_hours_of_operation('STRING OF HOURS OF OPERATION')
+    burger_map_url = parsed_page.find(class_="burger-map")
+    list_item['coordinates'] = extract_coords_from_url(burger_map_url['href'])
+    list_item['image_path'] = save_burger_image(base_url + parsed_page.find(id="Burger-Img").img['src'])
+    list_item['ingredients'] = use_witchcraft_to_messily_divine_an_ingredient_list(grab_from_generator(parsed_page.find(id="Ingredients").stripped_strings, 0))
+    address_parts = unicode(parsed_page.find(class_="burger-address"))
+    address_parts = address_parts[36:-7]
+    address_parts = split_string_on_one_of_several_strings(address_parts, ['<br/>\n<br/>\r\n', '<br/>\n<br/>\n'])
+    list_item['address'] = split_string_on_one_of_several_strings(address_parts[0], ['<br/>\r\n', '<br/>\n'])
     '''
-    TODO: complete the logic and determine if any of these values should be null.
+    I don't even know which restaurant needs this fix, just don't worry about it.
     '''
+    if "Opening April 3rd!" in address_parts[1]:
+        list_item['hours_of_operation'] = split_string_on_one_of_several_strings(address_parts[2], ['<br/>\r\n', '<br/>\n'])
+        list_item['phone_number'] = address_parts[3][:18]
+    else:
+        list_item['hours_of_operation'] = split_string_on_one_of_several_strings(address_parts[1], ['<br/>\r\n', '<br/>\n'])
+        list_item['phone_number'] = address_parts[2][5:18]
     completed_list.append(list_item)
+    print "Added " + list_item['restaurant_name']
 
-f = open('thing.json', 'w')
+f = open('2015.json', 'w')
 json.dump(completed_list, f)
